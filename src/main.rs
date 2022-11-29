@@ -2,7 +2,8 @@ use std::cell::RefCell;
 use std::error::Error;
 use std::rc::Rc;
 
-use gtk::prelude::*;
+use gtk4::prelude::*;
+use gtk4 as gtk;
 use plotters::prelude::*;
 use plotters_cairo::CairoBackend;
 
@@ -60,7 +61,7 @@ impl PlottingState {
                 (-50..=50).map(|x| x as f64 / 5.0),
                 move |x, y| self_cloned.guassian_pdf(x, y),
             )
-            .style_func(&|&v| (&HSLColor(240.0 / 360.0 - 240.0 / 360.0 * v, 1.0, 0.7)).into()),
+                .style_func(&|&v| (&HSLColor(240.0 / 360.0 - 240.0 / 360.0 * v, 1.0, 0.7)).into()),
         )?;
 
         root.present()?;
@@ -72,7 +73,7 @@ fn build_ui(app: &gtk::Application) {
     let builder = gtk::Builder::from_string(GLADE_UI_SOURCE);
     let window = builder.object::<gtk::Window>("MainWindow").unwrap();
 
-    window.set_title("Gaussian PDF Plotter");
+    window.set_title(Some("Gaussian PDF Plotter"));
 
     let drawing_area: gtk::DrawingArea = builder.object("MainDrawingArea").unwrap();
     let pitch_scale = builder.object::<gtk::Scale>("PitchScale").unwrap();
@@ -94,13 +95,10 @@ fn build_ui(app: &gtk::Application) {
     window.set_application(Some(app));
 
     let state_cloned = app_state.clone();
-    drawing_area.connect_draw(move |widget, cr| {
+    drawing_area.set_draw_func(move |_widget, cr, w, h| {
         let state = state_cloned.borrow().clone();
-        let w = widget.allocated_width();
-        let h = widget.allocated_height();
         let backend = CairoBackend::new(cr, (w as u32, h as u32)).unwrap();
         state.plot_pdf(backend).unwrap();
-        Inhibit(false)
     });
 
     let handle_change =
@@ -121,7 +119,7 @@ fn build_ui(app: &gtk::Application) {
     handle_change(&std_x_scale, Box::new(|s| &mut s.std_x));
     handle_change(&std_y_scale, Box::new(|s| &mut s.std_y));
 
-    window.show_all();
+    window.show();
 }
 
 fn main() {
